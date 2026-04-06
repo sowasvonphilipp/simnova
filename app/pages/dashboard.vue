@@ -1,11 +1,81 @@
 <template>
   <!-- Loading Screen -->
   <div v-if="isLoading" class="loading-screen">
-    <div class="spinner"></div>
-    <p>{{ loadingMessage }}</p>
+    <div class="loading-content">
+      <div class="loading-spinner">
+        <div class="spinner-ring"></div>
+        <div class="spinner-ring"></div>
+        <div class="spinner-ring"></div>
+      </div>
+      <h2 class="loading-title">SYSTEM</h2>
+      <p class="loading-message">{{ loadingMessage }}</p>
+      <div class="loading-bar">
+        <div class="loading-bar-fill"></div>
+      </div>
+    </div>
   </div>
 
-  <!-- Configuration Modal -->
+  <!-- System Configuration Modal -->
+  <div v-if="showSystemConfig" class="modal-overlay" @click.stop="showSystemConfig = false">
+    <div class="modal-content" @click.stop>
+      <div class="modal-header">
+        <h2>System Configuration</h2>
+        <button class="close-button" @click.stop="showSystemConfig = false">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="config-section">
+          <h3 class="config-heading">Visible Systems</h3>
+          <div class="config-category">
+            <h4>Machines</h4>
+            <div v-for="system in machinesGroup" :key="system.id" class="checkbox-item">
+              <label>
+                <input type="checkbox" v-model="visibleSystems[system.id]" @change="saveVisibleSystems" />
+                <span>{{ system.name }}</span>
+              </label>
+            </div>
+          </div>
+          <div class="config-category">
+            <h4>Power</h4>
+            <div v-for="system in powerGroup" :key="system.id" class="checkbox-item">
+              <label>
+                <input type="checkbox" v-model="visibleSystems[system.id]" @change="saveVisibleSystems" />
+                <span>{{ system.name }}</span>
+              </label>
+            </div>
+          </div>
+          <div class="config-category">
+            <h4>Lighting</h4>
+            <div v-for="system in lightingGroup" :key="system.id" class="checkbox-item">
+              <label>
+                <input type="checkbox" v-model="visibleSystems[system.id]" @change="saveVisibleSystems" />
+                <span>{{ system.name }}</span>
+              </label>
+            </div>
+          </div>
+          <div class="config-category">
+            <h4>Climate</h4>
+            <div v-for="system in climateGroup" :key="system.id" class="checkbox-item">
+              <label>
+                <input type="checkbox" v-model="visibleSystems[system.id]" @change="saveVisibleSystems" />
+                <span>{{ system.name }}</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-primary" @click.stop="showSystemConfig = false">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Device Configuration Modal -->
   <div v-if="activeModal" class="modal-overlay" @click.stop="closeModal">
     <div class="modal-content" @click.stop>
       <div class="modal-header">
@@ -21,41 +91,54 @@
         <div class="config-section">
           <h3 class="config-heading">Status</h3>
           <div class="config-item">
-            <label>Gerätestatus</label>
+            <label>Device Status</label>
             <select v-model="deviceStatus[activeModal]" @click.stop @change="saveStatus">
-              <option value="active">In Betrieb</option>
-              <option value="inactive">Ausgeschaltet</option>
-              <option value="outOfOrder">Nicht in Funktion</option>
+              <option value="active">Operational</option>
+              <option value="inactive">Offline</option>
+              <option value="outOfOrder">Out of Order</option>
             </select>
           </div>
           
-          <h3 class="config-heading">Einstellungen</h3>
+          <h3 class="config-heading">Settings</h3>
           <div class="config-item">
-            <label>Leistung (%)</label>
+            <label>Power Level (%)</label>
             <input type="range" v-model="genericConfig.power" min="0" max="100" @click.stop />
             <span class="value-display">{{ genericConfig.power }}%</span>
           </div>
           <div class="config-item">
-            <label>Notizen</label>
-            <textarea v-model="deviceNotes[activeModal]" @click.stop placeholder="z.B. Defekt: Motor macht Geräusche" rows="3"></textarea>
+            <label>Notes</label>
+            <textarea v-model="deviceNotes[activeModal]" @click.stop placeholder="e.g. Defect: Motor making noise" rows="3"></textarea>
           </div>
         </div>
       </div>
 
       <div class="modal-footer">
         <div class="footer-right">
-          <button class="btn-secondary" @click.stop="closeModal">Schließen</button>
-          <button class="btn-primary" @click.stop="saveConfiguration">Speichern</button>
+          <button class="btn-secondary" @click.stop="closeModal">Cancel</button>
+          <button class="btn-primary" @click.stop="saveConfiguration">Save</button>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="dashboard-container" @click="resetTimer">
+  <div class="dashboard-container" @click="resetTimer" @mousemove="resetTimer" @keydown="resetTimer">
     <header class="header">
       <div class="header-content">
         <div class="header-left">
-          <h1>🔧 Schulwerkstatt Steuerung</h1>
+          <div class="logo-section">
+            <div class="logo-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 002.25-2.25V6.75a2.25 2.25 0 00-2.25-2.25H6.75A2.25 2.25 0 004.5 6.75v10.5a2.25 2.25 0 002.25 2.25zm.75-12h9v9h-9v-9z" />
+              </svg>
+            </div>
+            <div>
+              <h1>SMART CONTROL</h1>
+              <p class="subtitle">Workshop Management System</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="header-center">
           <div class="date-time">
             <p class="date">{{ currentDate }}</p>
             <p class="time">{{ currentTime }}</p>
@@ -64,7 +147,7 @@
         
         <div class="header-right">
           <div class="session-info">
-            <p class="session-label">Aktivität</p>
+            <p class="session-label">SESSION ACTIVE</p>
             <div class="circular-timer">
               <svg width="60" height="60" viewBox="0 0 60 60">
                 <circle
@@ -73,8 +156,8 @@
                   cy="30"
                   r="26"
                   fill="none"
-                  stroke="rgba(255, 255, 255, 0.1)"
-                  stroke-width="4"
+                  stroke="rgba(255, 255, 255, 0.05)"
+                  stroke-width="3"
                 />
                 <circle
                   class="circle-progress"
@@ -83,7 +166,7 @@
                   r="26"
                   fill="none"
                   :stroke="getTimerColor()"
-                  stroke-width="4"
+                  stroke-width="3"
                   :stroke-dasharray="circumference"
                   :stroke-dashoffset="dashOffset"
                   transform="rotate(-90 30 30)"
@@ -100,6 +183,17 @@
               </svg>
             </div>
           </div>
+          <button class="settings-btn" @click.stop="showSystemConfig = true" title="Systemkonfiguration">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 011.45.12l.773.774c.39.389.44 1.002.12 1.45l-.527.737c-.25.35-.272.806-.107 1.204.165.397.505.71.93.78l.893.15c.543.09.94.56.94 1.109v1.094c0 .55-.397 1.02-.94 1.11l-.893.149c-.425.07-.765.383-.93.78-.165.398-.143.854.107 1.204l.527.738c.32.447.269 1.06-.12 1.45l-.774.773a1.125 1.125 0 01-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.397.165-.71.505-.781.929l-.149.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.019-.398-1.11-.94l-.148-.894c-.071-.424-.384-.764-.781-.93-.398-.164-.854-.142-1.204.108l-.738.527c-.447.32-1.06.269-1.45-.12l-.773-.774a1.125 1.125 0 01-.12-1.45l.527-.737c.25-.35.273-.806.108-1.204-.165-.397-.505-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.109v-1.094c0-.55.398-1.02.94-1.11l.894-.149c.424-.07.765-.383.93-.78.165-.398.143-.854-.107-1.204l-.527-.738a1.125 1.125 0 01.12-1.45l.773-.773a1.125 1.125 0 011.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.929l.15-.894z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </button>
+          <button class="logout-btn" @click.stop="lockSystem" title="System sperren">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+            </svg>
+          </button>
         </div>
       </div>
     </header>
@@ -107,15 +201,16 @@
     <main class="main-content">
       <!-- Control Panel Grid -->
       <div class="control-panel">
-        <h2>Werkstatt Steuerung</h2>
+        <h2>SYSTEM CONTROL</h2>
         
         <!-- Machines Section -->
-        <div class="section">
-          <h3 class="section-title">🔨 Maschinen</h3>
+        <div class="section" v-if="hasVisibleSystems(machinesGroup)">
+          <h3 class="section-title">MACHINES</h3>
           <div class="controls-grid">
             <div 
               v-for="system in machinesGroup" 
               :key="system.id"
+              v-show="visibleSystems[system.id]"
               class="control-card"
               :class="{ 
                 active: systems[system.id],
@@ -136,7 +231,7 @@
               <button 
                 class="config-btn" 
                 @click.stop="openModal(system.id)"
-                title="Einstellungen"
+                title="Settings"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -147,12 +242,13 @@
         </div>
 
         <!-- Power Section -->
-        <div class="section">
-          <h3 class="section-title">⚡ Stromversorgung</h3>
+        <div class="section" v-if="hasVisibleSystems(powerGroup)">
+          <h3 class="section-title">POWER SUPPLY</h3>
           <div class="controls-grid">
             <div 
               v-for="system in powerGroup" 
               :key="system.id"
+              v-show="visibleSystems[system.id]"
               class="control-card"
               :class="{ 
                 active: systems[system.id],
@@ -173,7 +269,7 @@
               <button 
                 class="config-btn" 
                 @click.stop="openModal(system.id)"
-                title="Einstellungen"
+                title="Settings"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -183,50 +279,77 @@
           </div>
         </div>
 
-        <!-- Lighting Section -->
-        <div class="section">
-          <h3 class="section-title">💡 Beleuchtung</h3>
-          <div class="controls-grid">
+        <!-- Lighting Section with Vertical Sliders -->
+        <div class="section" v-if="hasVisibleSystems(lightingGroup)">
+          <h3 class="section-title">LIGHTING CONTROL</h3>
+          <div class="lighting-controls">
             <div 
               v-for="system in lightingGroup" 
               :key="system.id"
-              class="control-card"
+              v-show="visibleSystems[system.id]"
+              class="light-slider-card"
               :class="{ 
-                active: systems[system.id],
+                active: systems[system.id] && (lightBrightness[system.id] ?? 0) > 0,
                 'out-of-order': deviceStatus[system.id] === 'outOfOrder'
               }"
             >
-              <div class="control-icon" @click.stop="toggleSystem(system.id)">
-                <component :is="'svg'" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" :d="system.icon" />
-                </component>
+              <div class="light-header">
+                <div class="light-icon" @click.stop="toggleLight(system.id)">
+                  <svg v-if="systems[system.id] && (lightBrightness[system.id] ?? 0) > 0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 101.06 1.061l1.591-1.59zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 10-1.061 1.06l1.59 1.591zM12 18a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-2.25A.75.75 0 0112 18zM7.758 17.303a.75.75 0 00-1.061-1.06l-1.591 1.59a.75.75 0 001.06 1.061l1.591-1.59zM6 12a.75.75 0 01-.75.75H3a.75.75 0 010-1.5h2.25A.75.75 0 016 12zM6.697 7.757a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 00-1.061 1.06l1.59 1.591z" />
+                  </svg>
+                  <svg v-else xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+                  </svg>
+                </div>
+                <button 
+                  class="config-btn-small" 
+                  @click.stop="openModal(system.id)"
+                  title="Settings"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </button>
               </div>
               
-              <div class="control-info">
-                <h3 class="control-name">{{ system.name }}</h3>
-                <p class="control-status">{{ getSystemStatus(system.id) }}</p>
+              <div class="vertical-slider-container">
+                <div class="brightness-value">{{ lightBrightness[system.id] }}</div>
+                <div class="slider-track">
+                  <div class="slider-fill" :style="{ height: lightBrightness[system.id] + '%' }"></div>
+                  <input 
+                    type="range" 
+                    class="vertical-slider" 
+                    :value="lightBrightness[system.id]" 
+                    @input="updateBrightness(system.id, $event)"
+                    @click.stop
+                    min="0" 
+                    max="100"
+                    orient="vertical"
+                  />
+                </div>
+                <div class="slider-labels">
+                  <span>100</span>
+                  <span>0</span>
+                </div>
               </div>
               
-              <button 
-                class="config-btn" 
-                @click.stop="openModal(system.id)"
-                title="Einstellungen"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-              </button>
+              <div class="light-info">
+                <h4 class="light-name">{{ system.name }}</h4>
+                <p class="light-status">{{ getLightStatus(system.id) }}</p>
+              </div>
             </div>
           </div>
         </div>
 
         <!-- Climate Section -->
-        <div class="section">
-          <h3 class="section-title">🌡️ Klima & Lüftung</h3>
+        <div class="section" v-if="hasVisibleSystems(climateGroup)">
+          <h3 class="section-title">CLIMATE & VENTILATION</h3>
           <div class="controls-grid">
             <div 
               v-for="system in climateGroup" 
               :key="system.id"
+              v-show="visibleSystems[system.id]"
               class="control-card"
               :class="{ 
                 active: systems[system.id],
@@ -247,7 +370,7 @@
               <button 
                 class="config-btn" 
                 @click.stop="openModal(system.id)"
-                title="Einstellungen"
+                title="Settings"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -258,12 +381,13 @@
         </div>
 
         <!-- Safety Section -->
-        <div class="section">
-          <h3 class="section-title">🚨 Sicherheit</h3>
+        <div class="section" v-if="hasVisibleSystems(safetyGroup)">
+          <h3 class="section-title">SAFETY & SECURITY</h3>
           <div class="controls-grid">
             <div 
               v-for="system in safetyGroup" 
               :key="system.id"
+              v-show="visibleSystems[system.id]"
               class="control-card"
               :class="{ 
                 active: systems[system.id],
@@ -285,7 +409,7 @@
               <button 
                 class="config-btn" 
                 @click.stop="openModal(system.id)"
-                title="Einstellungen"
+                title="Settings"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -298,37 +422,78 @@
 
       <!-- Statistics Panel -->
       <div class="stats-panel">
-        <h2>Systemübersicht</h2>
+        <h2>SYSTEM STATUS</h2>
         
         <div class="stats-grid">
           <div class="stat-card">
-            <div class="stat-icon active-icon">⚡</div>
+            <div class="stat-icon active-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                <path fill-rule="evenodd" d="M14.615 1.595a.75.75 0 01.359.852L12.982 9.75h7.268a.75.75 0 01.548 1.262l-10.5 11.25a.75.75 0 01-1.272-.71l1.992-7.302H3.75a.75.75 0 01-.548-1.262l10.5-11.25a.75.75 0 01.913-.143z" clip-rule="evenodd" />
+              </svg>
+            </div>
             <div class="stat-info">
               <p class="stat-label">Aktive Geräte</p>
-              <p class="stat-value">{{ activeSystemsCount }} / {{ totalSystemsCount }}</p>
+              <p class="stat-value">{{ activeSystemsCount }} / {{ visibleSystemsCount }}</p>
             </div>
           </div>
           
           <div class="stat-card">
-            <div class="stat-icon temp-icon">🌡️</div>
+            <div class="stat-icon temp-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2.25a.75.75 0 01.75.75v.756a49.106 49.106 0 019.152 1 .75.75 0 01-.152 1.485h-1.918l2.474 10.124a.75.75 0 01-.375.84A6.723 6.723 0 0118.75 18a6.723 6.723 0 01-3.181-.795.75.75 0 01-.375-.84l2.474-10.124H12.75v13.28c1.293.076 2.534.343 3.697.776a.75.75 0 01-.262 1.453h-8.37a.75.75 0 01-.262-1.453c1.162-.433 2.404-.7 3.697-.775V6.24H6.332l2.474 10.124a.75.75 0 01-.375.84A6.723 6.723 0 015.25 18a6.723 6.723 0 01-3.181-.795.75.75 0 01-.375-.84L4.168 6.241H2.25a.75.75 0 01-.152-1.485 49.105 49.105 0 019.152-1V3a.75.75 0 01.75-.75z" />
+              </svg>
+            </div>
             <div class="stat-info">
-              <p class="stat-label">Raumtemperatur</p>
+              <p class="stat-label">Temperatur</p>
               <p class="stat-value">{{ currentTemp }}°C</p>
             </div>
           </div>
           
           <div class="stat-card">
-            <div class="stat-icon power-icon">🔌</div>
+            <div class="stat-icon power-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M4.5 9.75a6 6 0 0011.573-2.226 3.75 3.75 0 014.133 4.303A4.5 4.5 0 0118 20.25H6.75a5.25 5.25 0 01-2.23-10.004 6.072 6.072 0 01-.02-.496z" />
+              </svg>
+            </div>
             <div class="stat-info">
               <p class="stat-label">Stromverbrauch</p>
               <p class="stat-value">{{ powerConsumption }} kW</p>
             </div>
           </div>
           
-          <div class="stat-card warning-card">
-            <div class="stat-icon warning-icon">⚠️</div>
+          <div class="stat-card">
+            <div class="stat-icon uptime-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                <path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zM12.75 6a.75.75 0 00-1.5 0v6c0 .414.336.75.75.75h4.5a.75.75 0 000-1.5h-3.75V6z" clip-rule="evenodd" />
+              </svg>
+            </div>
             <div class="stat-info">
-              <p class="stat-label">Nicht in Funktion</p>
+              <p class="stat-label">Betriebszeit</p>
+              <p class="stat-value">{{ systemUptime }}</p>
+            </div>
+          </div>
+          
+          <div class="stat-card">
+            <div class="stat-icon efficiency-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                <path fill-rule="evenodd" d="M2.25 13.5a8.25 8.25 0 018.25-8.25.75.75 0 01.75.75v6.75H18a.75.75 0 01.75.75 8.25 8.25 0 01-16.5 0z" clip-rule="evenodd" />
+                <path fill-rule="evenodd" d="M12.75 3a.75.75 0 01.75-.75 8.25 8.25 0 018.25 8.25.75.75 0 01-.75.75h-6.75V4.5a.75.75 0 01-.75-.75z" clip-rule="evenodd" />
+              </svg>
+            </div>
+            <div class="stat-info">
+              <p class="stat-label">Systemeffizienz</p>
+              <p class="stat-value">{{ systemEfficiency }}%</p>
+            </div>
+          </div>
+          
+          <div class="stat-card warning-card" v-if="outOfOrderCount > 0">
+            <div class="stat-icon warning-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                <path fill-rule="evenodd" d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z" clip-rule="evenodd" />
+              </svg>
+            </div>
+            <div class="stat-info">
+              <p class="stat-label">Nicht funktionsfähig</p>
               <p class="stat-value">{{ outOfOrderCount }}</p>
             </div>
           </div>
@@ -336,31 +501,25 @@
 
         <!-- Quick Actions -->
         <div class="quick-actions">
-          <h3>Schnellaktionen</h3>
+          <h3>QUICK ACTIONS</h3>
           <div class="action-buttons">
-            <button @click="activateGeneralSystems" class="action-btn success">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
-              </svg>
-              Generelle Systeme Ein
-            </button>
             <button @click="activateAllMachines" class="action-btn primary">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
               </svg>
-              Alle Maschinen Ein
+              All Machines ON
             </button>
-            <button @click="deactivateAllMachines" class="action-btn secondary">
+            <button @click="deactivateAllMachines" class="action-btn danger">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M5.636 5.636a9 9 0 1012.728 0M12 3v9" />
               </svg>
-              Alle Maschinen Aus
+              All Machines OFF
             </button>
             <button @click="activateLighting" class="action-btn warning">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
               </svg>
-              Beleuchtung An
+              All Lights ON
             </button>
             <button @click="toggleTimerPause" :class="['action-btn', timerPaused ? 'timer-active' : 'timer-paused']">
               <svg v-if="!timerPaused" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -369,14 +528,14 @@
               <svg v-else xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />
               </svg>
-              {{ timerPaused ? 'Aktivität Fortsetzen' : 'Aktivität Pause' }}
+              {{ timerPaused ? 'Resume Timer' : 'Pause Timer' }}
             </button>
           </div>
         </div>
 
         <!-- Out of Order List -->
         <div v-if="outOfOrderDevices.length > 0" class="out-of-order-list">
-          <h3>⚠️ Defekte Geräte</h3>
+          <h3>OUT OF ORDER</h3>
           <div class="defect-items">
             <div v-for="device in outOfOrderDevices" :key="device.id" class="defect-item">
               <span class="defect-name">{{ device.name }}</span>
@@ -391,6 +550,9 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 
 // Session & Timer Management
 const sessionExpireCountdown = ref(30)
@@ -404,11 +566,18 @@ let clockTimer: NodeJS.Timeout | null = null
 const systems = ref<Record<string, boolean>>({})
 const deviceStatus = ref<Record<string, 'active' | 'inactive' | 'outOfOrder'>>({})
 const deviceNotes = ref<Record<string, string>>({})
+const visibleSystems = ref<Record<string, boolean>>({})
+const lightBrightness = ref<Record<string, number>>({})
 const isLoading = ref(false)
 const loadingMessage = ref('')
 const activeModal = ref<string | null>(null)
+const showSystemConfig = ref(false)
 const currentTemp = ref(22.0)
 const powerConsumption = ref(0)
+const systemUptime = ref('00:00:00')
+const systemEfficiency = ref(0)
+let uptimeTimer: NodeJS.Timeout | null = null
+let uptimeSeconds = 0
 
 // Generic config for all systems
 const genericConfig = ref({
@@ -532,8 +701,12 @@ const loadingTimes: Record<string, number> = {
 // Computed properties
 const activeSystemsCount = computed(() => {
   return Object.keys(systems.value).filter(key => 
-    systems.value[key] && deviceStatus.value[key] !== 'outOfOrder'
+    systems.value[key] && deviceStatus.value[key] !== 'outOfOrder' && visibleSystems.value[key]
   ).length
+})
+
+const visibleSystemsCount = computed(() => {
+  return Object.keys(visibleSystems.value).filter(key => visibleSystems.value[key]).length
 })
 
 const totalSystemsCount = computed(() => {
@@ -542,12 +715,14 @@ const totalSystemsCount = computed(() => {
 
 const outOfOrderCount = computed(() => {
   return Object.keys(deviceStatus.value).filter(key => 
-    deviceStatus.value[key] === 'outOfOrder'
+    deviceStatus.value[key] === 'outOfOrder' && visibleSystems.value[key]
   ).length
 })
 
 const outOfOrderDevices = computed(() => {
-  return allSystems.filter(system => deviceStatus.value[system.id] === 'outOfOrder')
+  return allSystems.filter(system => 
+    deviceStatus.value[system.id] === 'outOfOrder' && visibleSystems.value[system.id]
+  )
 })
 
 const radius = 26
@@ -567,18 +742,32 @@ const getTimerColor = () => {
 const getModalTitle = () => {
   if (!activeModal.value) return ''
   const system = allSystems.find(s => s.id === activeModal.value)
-  return system ? `${system.name}` : 'System Einstellungen'
+  return system ? `${system.name}` : 'System Settings'
 }
 
 const getSystemStatus = (systemId: string) => {
   if (deviceStatus.value[systemId] === 'outOfOrder') {
-    return '⚠️ Nicht in Funktion'
+    return 'OUT OF ORDER'
   }
   
   const isActive = systems.value[systemId]
-  if (systemId === 'notaus') return isActive ? '🚨 AKTIV' : 'Bereit'
-  if (systemId === 'tuer') return isActive ? 'Offen' : 'Verriegelt'
-  return isActive ? 'EIN' : 'AUS'
+  if (systemId === 'notaus') return isActive ? 'ACTIVE' : 'Ready'
+  if (systemId === 'tuer') return isActive ? 'Open' : 'Locked'
+  return isActive ? 'ON' : 'OFF'
+}
+
+const getLightStatus = (systemId: string) => {
+  if (deviceStatus.value[systemId] === 'outOfOrder') {
+    return 'OUT OF ORDER'
+  }
+  
+  const brightness = lightBrightness.value[systemId] || 0
+  if (brightness === 0) return 'OFF'
+  return `${brightness}% Brightness`
+}
+
+const hasVisibleSystems = (group: any[]) => {
+  return group.some(system => visibleSystems.value[system.id])
 }
 
 // Update power consumption based on active systems
@@ -626,6 +815,54 @@ const saveConfiguration = () => {
     saveStatus()
   }
   closeModal()
+}
+
+const saveVisibleSystems = () => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('visibleSystems', JSON.stringify(visibleSystems.value))
+  }
+}
+
+const toggleLight = async (systemId: string) => {
+  if (deviceStatus.value[systemId] === 'outOfOrder') {
+    isLoading.value = true
+    loadingMessage.value = 'Device is not operational!'
+    await new Promise(resolve => setTimeout(resolve, 1500))
+    isLoading.value = false
+    loadingMessage.value = ''
+    return
+  }
+  
+  resetTimer()
+  
+  if ((lightBrightness.value[systemId] ?? 0) > 0) {
+    // Turn off
+    lightBrightness.value[systemId] = 0
+    systems.value[systemId] = false
+  } else {
+    // Turn on to 100%
+    lightBrightness.value[systemId] = 100
+    systems.value[systemId] = true
+  }
+  
+  updatePowerConsumption()
+  saveLightBrightness()
+}
+
+const updateBrightness = (systemId: string, event: Event) => {
+  resetTimer()
+  const value = parseInt((event.target as HTMLInputElement).value)
+  lightBrightness.value[systemId] = value
+  systems.value[systemId] = value > 0
+  updatePowerConsumption()
+  saveLightBrightness()
+}
+
+const saveLightBrightness = () => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('lightBrightness', JSON.stringify(lightBrightness.value))
+    localStorage.setItem('workshopSystems', JSON.stringify(systems.value))
+  }
 }
 
 const toggleSystem = async (systemId: string) => {
@@ -739,10 +976,13 @@ const deactivateAllMachines = async () => {
 const activateLighting = async () => {
   resetTimer()
   for (const system of lightingGroup) {
-    if (!systems.value[system.id] && deviceStatus.value[system.id] !== 'outOfOrder' && system.id !== 'notlicht') {
-      await toggleSystem(system.id)
+    if (visibleSystems.value[system.id] && deviceStatus.value[system.id] !== 'outOfOrder') {
+      lightBrightness.value[system.id] = 100
+      systems.value[system.id] = true
     }
   }
+  updatePowerConsumption()
+  saveLightBrightness()
 }
 
 const toggleTimerPause = () => {
@@ -754,6 +994,15 @@ const toggleTimerPause = () => {
 
 const resetTimer = () => {
   sessionExpireCountdown.value = 30
+}
+
+const lockSystem = () => {
+  // Save current state before locking
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('workshopSystems', JSON.stringify(systems.value))
+    localStorage.setItem('lightBrightness', JSON.stringify(lightBrightness.value))
+  }
+  router.push('/locked')
 }
 
 const updateDateTime = () => {
@@ -777,6 +1026,10 @@ onMounted(() => {
   allSystems.forEach(system => {
     systems.value[system.id] = false
     deviceStatus.value[system.id] = 'inactive'
+    visibleSystems.value[system.id] = true // All visible by default
+    if (lightingGroup.some(l => l.id === system.id)) {
+      lightBrightness.value[system.id] = 0
+    }
   })
   
   // Load saved states
@@ -785,6 +1038,8 @@ onMounted(() => {
     const savedConfig = localStorage.getItem('workshopConfig')
     const savedStatus = localStorage.getItem('deviceStatus')
     const savedNotes = localStorage.getItem('deviceNotes')
+    const savedVisible = localStorage.getItem('visibleSystems')
+    const savedBrightness = localStorage.getItem('lightBrightness')
     
     if (savedSystems) {
       Object.assign(systems.value, JSON.parse(savedSystems))
@@ -802,34 +1057,68 @@ onMounted(() => {
     if (savedNotes) {
       Object.assign(deviceNotes.value, JSON.parse(savedNotes))
     }
+    
+    if (savedVisible) {
+      Object.assign(visibleSystems.value, JSON.parse(savedVisible))
+    }
+    
+    if (savedBrightness) {
+      Object.assign(lightBrightness.value, JSON.parse(savedBrightness))
+    }
   }
   
   // Start timers
   updateDateTime()
   clockTimer = setInterval(updateDateTime, 1000)
   
+  // Uptime timer
+  uptimeTimer = setInterval(() => {
+    uptimeSeconds++
+    const hours = Math.floor(uptimeSeconds / 3600)
+    const minutes = Math.floor((uptimeSeconds % 3600) / 60)
+    const seconds = uptimeSeconds % 60
+    systemUptime.value = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+  }, 1000)
+  
   sessionTimer = setInterval(() => {
     if (!timerPaused.value) {
       if (sessionExpireCountdown.value > 0) {
         sessionExpireCountdown.value--
       } else {
-        sessionExpireCountdown.value = 30
+        // Session expired - redirect to locked page
+        if (typeof window !== 'undefined') {
+          router.push('/locked')
+        }
       }
     }
   }, 1000)
   
-  // Update temperature periodically
+  // Update temperature and efficiency periodically
   setInterval(() => {
-    const machineCount = machinesGroup.filter(m => systems.value[m.id]).length
+    const machineCount = machinesGroup.filter(m => systems.value[m.id] && visibleSystems.value[m.id]).length
     const targetTemp = 21.0 + (machineCount * 0.3)
     currentTemp.value += (targetTemp - currentTemp.value) * 0.1
     currentTemp.value = Math.round(currentTemp.value * 10) / 10
+    
+    // Calculate system efficiency based on active systems and out of order devices
+    const totalActive = activeSystemsCount.value
+    const totalVisible = visibleSystemsCount.value
+    const outOfOrder = outOfOrderCount.value
+    
+    if (totalVisible > 0) {
+      const baseEfficiency = (totalActive / totalVisible) * 100
+      const penaltyForOutOfOrder = (outOfOrder / totalVisible) * 20
+      systemEfficiency.value = Math.max(0, Math.round(baseEfficiency - penaltyForOutOfOrder))
+    } else {
+      systemEfficiency.value = 0
+    }
   }, 5000)
 })
 
 onUnmounted(() => {
   if (sessionTimer) clearInterval(sessionTimer)
   if (clockTimer) clearInterval(clockTimer)
+  if (uptimeTimer) clearInterval(uptimeTimer)
 })
 </script>
 
@@ -847,36 +1136,98 @@ onUnmounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.9);
+  background: #000000;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   z-index: 10000;
-  backdrop-filter: blur(10px);
 }
 
-.spinner {
-  width: 80px;
-  height: 80px;
-  border: 8px solid rgba(59, 130, 246, 0.2);
-  border-top-color: #3b82f6;
+.loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+}
+
+.loading-spinner {
+  position: relative;
+  width: 120px;
+  height: 120px;
+}
+
+.spinner-ring {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border: 3px solid transparent;
+  border-top-color: #ffffff;
   border-radius: 50%;
-  animation: spin 1s linear infinite;
+  animation: spin 1.5s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite;
+}
+
+.spinner-ring:nth-child(2) {
+  width: 80%;
+  height: 80%;
+  top: 10%;
+  left: 10%;
+  border-top-color: #888888;
+  animation-delay: 0.2s;
+  animation-duration: 1.8s;
+}
+
+.spinner-ring:nth-child(3) {
+  width: 60%;
+  height: 60%;
+  top: 20%;
+  left: 20%;
+  border-top-color: #555555;
+  animation-delay: 0.4s;
+  animation-duration: 2.1s;
 }
 
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
 
-.loading-screen p {
-  margin-top: 24px;
+.loading-title {
   color: white;
-  font-size: 18px;
+  font-size: 48px;
+  font-weight: 900;
+  letter-spacing: 12px;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.loading-message {
+  color: #888888;
+  font-size: 16px;
   font-weight: 600;
   text-align: center;
-  max-width: 400px;
-  padding: 0 20px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  min-height: 24px;
+}
+
+.loading-bar {
+  width: 300px;
+  height: 3px;
+  background: #222222;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.loading-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ffffff, #888888);
+  animation: loading 2s ease-in-out infinite;
+}
+
+@keyframes loading {
+  0% { width: 0%; }
+  50% { width: 100%; }
+  100% { width: 0%; }
 }
 
 /* Modal */
@@ -886,30 +1237,30 @@ onUnmounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.75);
+  background: rgba(0, 0, 0, 0.85);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 9999;
-  backdrop-filter: blur(5px);
+  backdrop-filter: blur(8px);
   padding: 20px;
 }
 
 .modal-content {
-  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-  border-radius: 16px;
-  max-width: 500px;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  border-radius: 20px;
+  max-width: 600px;
   width: 100%;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(59, 130, 246, 0.2);
 }
 
 .modal-header {
-  padding: 24px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 28px;
+  border-bottom: 1px solid rgba(59, 130, 246, 0.1);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -917,17 +1268,18 @@ onUnmounted(() => {
 
 .modal-header h2 {
   color: white;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 700;
+  letter-spacing: 0.5px;
 }
 
 .close-button {
   background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  border: 1px solid rgba(239, 68, 68, 0.2);
   color: #ef4444;
   width: 40px;
   height: 40px;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -937,16 +1289,17 @@ onUnmounted(() => {
 
 .close-button:hover {
   background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
   transform: scale(1.05);
 }
 
 .close-button svg {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
 }
 
 .modal-body {
-  padding: 24px;
+  padding: 28px;
   overflow-y: auto;
   flex: 1;
 }
@@ -957,21 +1310,68 @@ onUnmounted(() => {
 
 .config-heading {
   color: #60a5fa;
-  font-size: 16px;
+  font-size: 14px;
+  font-weight: 700;
+  margin: 24px 0 16px 0;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.config-category {
+  margin-bottom: 24px;
+}
+
+.config-category h4 {
+  color: #94a3b8;
+  font-size: 13px;
   font-weight: 600;
-  margin: 20px 0 12px 0;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.checkbox-item {
+  margin-bottom: 10px;
+}
+
+.checkbox-item label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.checkbox-item label:hover {
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.checkbox-item input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #3b82f6;
+}
+
+.checkbox-item span {
+  color: #cbd5e1;
+  font-size: 14px;
 }
 
 .config-item {
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 .config-item label {
   display: block;
   color: #cbd5e1;
-  font-size: 14px;
-  font-weight: 500;
-  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .config-item input[type="range"],
@@ -980,31 +1380,40 @@ onUnmounted(() => {
 .config-item select,
 .config-item textarea {
   width: 100%;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  padding: 10px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 10px;
+  padding: 12px 16px;
   color: white;
   font-size: 14px;
   font-family: inherit;
+  transition: all 0.3s ease;
+}
+
+.config-item input:focus,
+.config-item select:focus,
+.config-item textarea:focus {
+  outline: none;
+  border-color: rgba(59, 130, 246, 0.5);
+  background: rgba(15, 23, 42, 0.8);
 }
 
 .config-item textarea {
   resize: vertical;
-  min-height: 60px;
+  min-height: 80px;
 }
 
 .value-display {
   display: inline-block;
-  margin-left: 12px;
+  margin-left: 16px;
   color: #60a5fa;
-  font-weight: 600;
-  font-size: 14px;
+  font-weight: 700;
+  font-size: 16px;
 }
 
 .modal-footer {
-  padding: 20px 24px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 24px 28px;
+  border-top: 1px solid rgba(59, 130, 246, 0.1);
   display: flex;
   justify-content: flex-end;
   gap: 12px;
@@ -1017,22 +1426,26 @@ onUnmounted(() => {
 
 .btn-secondary,
 .btn-primary {
-  padding: 12px 24px;
-  border-radius: 8px;
+  padding: 12px 28px;
+  border-radius: 10px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
   border: none;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .btn-secondary {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(71, 85, 105, 0.3);
   color: white;
+  border: 1px solid rgba(71, 85, 105, 0.4);
 }
 
 .btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(71, 85, 105, 0.5);
+  border-color: rgba(71, 85, 105, 0.6);
 }
 
 .btn-primary {
@@ -1042,49 +1455,107 @@ onUnmounted(() => {
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4);
 }
 
 /* Dashboard */
 .dashboard-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  background: #0a0e1a;
   color: white;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
 }
 
 .header {
-  background: rgba(15, 23, 42, 0.8);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 20px;
+  background: rgba(10, 14, 26, 0.95);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(59, 130, 246, 0.1);
+  padding: 16px 24px;
   position: sticky;
   top: 0;
   z-index: 100;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
 }
 
 .header-content {
-  max-width: 1600px;
+  max-width: 1800px;
   margin: 0 auto;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 40px;
+}
+
+.logo-section {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.logo-icon {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.logo-icon svg {
+  width: 28px;
+  height: 28px;
 }
 
 .header-left h1 {
-  font-size: 28px;
-  font-weight: 800;
-  background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  margin-bottom: 8px;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: white;
+  margin: 0;
+}
+
+.subtitle {
+  font-size: 11px;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 2px;
+}
+
+.header-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
 }
 
 .date-time {
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.date {
+  font-size: 13px;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.time {
+  font-size: 28px;
+  font-weight: 600;
+  color: white;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 1px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
   gap: 20px;
-  font-size: 14px;
-  color: #94a3b8;
 }
 
 .circular-timer {
@@ -1093,9 +1564,12 @@ onUnmounted(() => {
 
 .session-label {
   text-align: center;
-  font-size: 12px;
-  color: #94a3b8;
-  margin-bottom: 8px;
+  font-size: 10px;
+  color: #64748b;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 600;
 }
 
 .timer-text {
@@ -1104,54 +1578,110 @@ onUnmounted(() => {
   font-weight: 700;
 }
 
+.settings-btn {
+  width: 48px;
+  height: 48px;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 12px;
+  color: #60a5fa;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.settings-btn:hover {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.4);
+  transform: rotate(90deg);
+}
+
+.settings-btn svg {
+  width: 24px;
+  height: 24px;
+}
+
+.logout-btn {
+  width: 48px;
+  height: 48px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 12px;
+  color: #ef4444;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.logout-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.logout-btn svg {
+  width: 24px;
+  height: 24px;
+}
+
 /* Main Content */
 .main-content {
-  max-width: 1600px;
+  max-width: 1800px;
   margin: 0 auto;
-  padding: 40px 20px;
+  padding: 32px 24px;
   display: grid;
-  grid-template-columns: 1fr 350px;
-  gap: 30px;
+  grid-template-columns: 1fr 380px;
+  gap: 32px;
 }
 
 .control-panel h2,
 .stats-panel h2 {
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 700;
-  margin-bottom: 24px;
-  color: #f1f5f9;
+  letter-spacing: 2px;
+  margin-bottom: 32px;
+  color: #64748b;
+  text-transform: uppercase;
 }
 
 /* Sections */
 .section {
-  margin-bottom: 40px;
+  margin-bottom: 48px;
 }
 
 .section-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #cbd5e1;
-  margin-bottom: 16px;
-  padding-bottom: 8px;
-  border-bottom: 2px solid rgba(59, 130, 246, 0.3);
+  font-size: 14px;
+  font-weight: 700;
+  color: #64748b;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(59, 130, 246, 0.1);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
 }
 
 /* Controls Grid */
 .controls-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   gap: 16px;
 }
 
 .control-card {
-  background: rgba(30, 41, 59, 0.6);
-  border: 2px solid rgba(71, 85, 105, 0.3);
-  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.6));
+  border: 1px solid rgba(59, 130, 246, 0.1);
+  border-radius: 16px;
   padding: 20px;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
   position: relative;
   overflow: hidden;
+  backdrop-filter: blur(10px);
 }
 
 .control-card::before {
@@ -1160,20 +1690,20 @@ onUnmounted(() => {
   top: 0;
   left: 0;
   right: 0;
-  height: 4px;
+  height: 2px;
   background: transparent;
   transition: all 0.3s ease;
 }
 
 .control-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-  border-color: rgba(96, 165, 250, 0.5);
+  box-shadow: 0 12px 40px rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.3);
 }
 
 .control-card.active {
-  background: rgba(59, 130, 246, 0.15);
-  border-color: #3b82f6;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(37, 99, 235, 0.1));
+  border-color: rgba(59, 130, 246, 0.4);
 }
 
 .control-card.active::before {
@@ -1181,9 +1711,10 @@ onUnmounted(() => {
 }
 
 .control-card.out-of-order {
-  background: rgba(239, 68, 68, 0.15);
-  border-color: #ef4444;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.05));
+  border-color: rgba(239, 68, 68, 0.3);
   cursor: not-allowed;
+  opacity: 0.7;
 }
 
 .control-card.out-of-order::before {
@@ -1191,21 +1722,26 @@ onUnmounted(() => {
 }
 
 .control-card.emergency {
-  background: rgba(239, 68, 68, 0.2);
-  border-color: #ef4444;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.15));
+  border-color: rgba(239, 68, 68, 0.5);
   animation: pulse-red 2s ease-in-out infinite;
 }
 
 @keyframes pulse-red {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
-  50% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+  0%, 100% { 
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+    border-color: rgba(239, 68, 68, 0.5);
+  }
+  50% { 
+    box-shadow: 0 0 0 12px rgba(239, 68, 68, 0);
+    border-color: rgba(239, 68, 68, 0.8);
+  }
 }
-
 .control-icon {
   width: 48px;
   height: 48px;
   margin-bottom: 12px;
-  color: #94a3b8;
+  color: #475569;
   transition: all 0.3s ease;
 }
 
@@ -1226,20 +1762,251 @@ onUnmounted(() => {
   height: 100%;
 }
 
-.control-info {
-  margin-bottom: 8px;
+/* Lighting Controls with Vertical Sliders */
+.lighting-controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 20px;
 }
 
-.control-name {
-  font-size: 15px;
+.light-slider-card {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.6));
+  border: 1px solid rgba(59, 130, 246, 0.1);
+  border-radius: 16px;
+  padding: 20px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.light-slider-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: transparent;
+  transition: all 0.3s ease;
+}
+
+.light-slider-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.light-slider-card.active {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(37, 99, 235, 0.1));
+  border-color: rgba(59, 130, 246, 0.4);
+}
+
+.light-slider-card.active::before {
+  background: linear-gradient(90deg, #f59e0b, #fbbf24);
+}
+
+.light-slider-card.out-of-order {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.05));
+  border-color: rgba(239, 68, 68, 0.3);
+  opacity: 0.7;
+}
+
+.light-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.light-icon {
+  width: 40px;
+  height: 40px;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.light-slider-card.active .light-icon {
+  color: #fbbf24;
+}
+
+.light-icon:hover {
+  transform: scale(1.1);
+}
+
+.light-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.config-btn-small {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.config-btn-small:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+  transform: rotate(90deg);
+}
+
+.config-btn-small svg {
+  width: 18px;
+  height: 18px;
+}
+
+.vertical-slider-container {
+  position: relative;
+  height: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 20px 0;
+}
+
+.brightness-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 16px;
+}
+
+.slider-track {
+  position: relative;
+  width: 60px;
+  height: 200px;
+  background: rgba(15, 23, 42, 0.6);
+  border-radius: 30px;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  overflow: hidden;
+}
+
+.slider-fill {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, #3b82f6, #60a5fa, #fbbf24);
+  transition: height 0.2s ease;
+  border-radius: 30px;
+}
+
+.vertical-slider {
+  position: absolute;
+  width: 200px;
+  height: 60px;
+  top: 70px;
+  left: -70px;
+  transform: rotate(-90deg);
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  outline: none;
+  cursor: pointer;
+}
+
+.vertical-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: white;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+}
+
+.vertical-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.5);
+}
+
+.vertical-slider::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: white;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+}
+
+.vertical-slider::-moz-range-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.5);
+}
+
+.slider-labels {
+  position: absolute;
+  right: -30px;
+  top: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.light-info {
+  width: 100%;
+  text-align: center;
+  margin-top: 12px;
+}
+
+.light-name {
+  font-size: 13px;
   font-weight: 600;
   color: white;
   margin-bottom: 4px;
 }
 
-.control-status {
-  font-size: 12px;
+.light-status {
+  font-size: 11px;
   color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.light-slider-card.active .light-status {
+  color: #fbbf24;
+}
+
+.control-info {
+  margin-bottom: 8px;
+}
+
+.control-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: white;
+  margin-bottom: 4px;
+  letter-spacing: 0.3px;
+}
+
+.control-status {
+  font-size: 11px;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
 }
 
 .control-card.active .control-status {
@@ -1256,10 +2023,10 @@ onUnmounted(() => {
   right: 12px;
   width: 32px;
   height: 32px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 6px;
-  color: #94a3b8;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  color: #64748b;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1273,14 +2040,52 @@ onUnmounted(() => {
 }
 
 .config-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
+  background: rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
   transform: rotate(90deg);
 }
 
 .config-btn svg {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
+}
+
+/* Responsive Design */
+@media (max-width: 1400px) {
+  .main-content {
+    grid-template-columns: 1fr 340px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .main-content {
+    grid-template-columns: 1fr;
+  }
+  
+  .stats-panel {
+    position: relative;
+    top: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .header-content {
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .header-center {
+    width: 100%;
+  }
+  
+  .controls-grid,
+  .lighting-controls {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+  
+  .time {
+    font-size: 22px;
+  }
 }
 
 /* Stats Panel */
@@ -1297,43 +2102,69 @@ onUnmounted(() => {
 }
 
 .stat-card {
-  background: rgba(30, 41, 59, 0.6);
-  border: 1px solid rgba(71, 85, 105, 0.3);
-  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.6));
+  border: 1px solid rgba(59, 130, 246, 0.1);
+  border-radius: 16px;
   padding: 20px;
   display: flex;
   align-items: center;
   gap: 16px;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  border-color: rgba(59, 130, 246, 0.3);
+  transform: translateX(4px);
 }
 
 .stat-card.warning-card {
-  border-color: rgba(239, 68, 68, 0.5);
+  border-color: rgba(239, 68, 68, 0.3);
 }
 
 .stat-icon {
-  font-size: 32px;
-  width: 56px;
-  height: 56px;
+  width: 52px;
+  height: 52px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 12px;
+  border-radius: 14px;
+  flex-shrink: 0;
+}
+
+.stat-icon svg {
+  width: 28px;
+  height: 28px;
 }
 
 .active-icon {
-  background: rgba(59, 130, 246, 0.1);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.1));
+  color: #60a5fa;
 }
 
 .temp-icon {
-  background: rgba(251, 146, 60, 0.1);
+  background: linear-gradient(135deg, rgba(251, 146, 60, 0.2), rgba(249, 115, 22, 0.1));
+  color: #fb923c;
 }
 
 .power-icon {
-  background: rgba(34, 197, 94, 0.1);
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(22, 163, 74, 0.1));
+  color: #4ade80;
 }
 
 .warning-icon {
-  background: rgba(239, 68, 68, 0.1);
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.1));
+  color: #f87171;
+}
+
+.uptime-icon {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(124, 58, 237, 0.1));
+  color: #a78bfa;
+}
+
+.efficiency-icon {
+  background: linear-gradient(135deg, rgba(234, 179, 8, 0.2), rgba(202, 138, 4, 0.1));
+  color: #facc15;
 }
 
 .stat-info {
@@ -1341,56 +2172,65 @@ onUnmounted(() => {
 }
 
 .stat-label {
-  font-size: 13px;
-  color: #94a3b8;
-  margin-bottom: 4px;
+  font-size: 11px;
+  color: #64748b;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 600;
 }
 
 .stat-value {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 700;
   color: white;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Quick Actions */
 .quick-actions {
-  background: rgba(30, 41, 59, 0.6);
-  border: 1px solid rgba(71, 85, 105, 0.3);
-  border-radius: 12px;
-  padding: 20px;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.6));
+  border: 1px solid rgba(59, 130, 246, 0.1);
+  border-radius: 16px;
+  padding: 24px;
   margin-bottom: 20px;
+  backdrop-filter: blur(10px);
 }
 
 .quick-actions h3 {
-  font-size: 16px;
-  font-weight: 600;
-  margin-bottom: 16px;
-  color: #f1f5f9;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
 }
 
 .action-buttons {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .action-btn {
   padding: 14px 20px;
-  border-radius: 8px;
+  border-radius: 12px;
   border: none;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .action-btn svg {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
 }
 
 .action-btn.primary {
@@ -1400,17 +2240,17 @@ onUnmounted(() => {
 
 .action-btn.primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 12px 24px rgba(16, 185, 129, 0.4);
 }
 
-.action-btn.secondary {
-  background: rgba(71, 85, 105, 0.3);
+.action-btn.danger {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
   color: white;
-  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.action-btn.secondary:hover {
-  background: rgba(71, 85, 105, 0.5);
+.action-btn.danger:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(239, 68, 68, 0.4);
 }
 
 .action-btn.warning {
@@ -1420,54 +2260,47 @@ onUnmounted(() => {
 
 .action-btn.warning:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(245, 158, 11, 0.3);
-}
-
-.action-btn.success {
-  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-  color: white;
-}
-
-.action-btn.success:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(139, 92, 246, 0.3);
+  box-shadow: 0 12px 24px rgba(245, 158, 11, 0.4);
 }
 
 .action-btn.timer-paused {
-  background: rgba(239, 68, 68, 0.2);
+  background: rgba(239, 68, 68, 0.15);
   color: #fca5a5;
   border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
 .action-btn.timer-paused:hover {
-  background: rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.25);
   border-color: rgba(239, 68, 68, 0.5);
 }
 
 .action-btn.timer-active {
-  background: rgba(34, 197, 94, 0.2);
+  background: rgba(34, 197, 94, 0.15);
   color: #86efac;
   border: 1px solid rgba(34, 197, 94, 0.3);
 }
 
 .action-btn.timer-active:hover {
-  background: rgba(34, 197, 94, 0.3);
+  background: rgba(34, 197, 94, 0.25);
   border-color: rgba(34, 197, 94, 0.5);
 }
 
 /* Out of Order List */
 .out-of-order-list {
-  background: rgba(239, 68, 68, 0.1);
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.05));
   border: 1px solid rgba(239, 68, 68, 0.3);
-  border-radius: 12px;
-  padding: 20px;
+  border-radius: 16px;
+  padding: 24px;
+  backdrop-filter: blur(10px);
 }
 
 .out-of-order-list h3 {
-  font-size: 16px;
-  font-weight: 600;
-  margin-bottom: 16px;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 20px;
   color: #fca5a5;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
 }
 
 .defect-items {
@@ -1477,18 +2310,18 @@ onUnmounted(() => {
 }
 
 .defect-item {
-  background: rgba(30, 41, 59, 0.6);
-  padding: 12px;
-  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.6);
+  padding: 14px;
+  border-radius: 10px;
   border-left: 3px solid #ef4444;
 }
 
 .defect-name {
   display: block;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: white;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 .defect-note {
